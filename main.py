@@ -1,28 +1,37 @@
 import os
-from funcs.figma_export import fetch_figma_data
-from funcs.split_screens import split_figma_screens
+import webbrowser
+import subprocess
+import time
 
 def main():
-    print("=== FIGMA EXPORT & SPLIT TOOL ===")
+    print("=== FIGMA EXPORT PRO - UI MODE ===")
     
-    # 1. Tai du lieu tu Figma
-    print("\n[1/3] Dang tai du lieu tu Figma API...")
-    fetch_figma_data()
+    # 1. Kiểm tra thư viện
+    try:
+        import fastapi
+        import uvicorn
+    except ImportError:
+        print("[ERROR] Thieu thu vien! Vui long chay lenh sau de cai dat:")
+        print("pip install fastapi uvicorn requests")
+        return
+
+    # 2. Tu dong mo trinh duyet sau 2 giay (doi server len)
+    url = "http://127.0.0.1:8000"
+    print(f"[*] Dang khoi dong server tai: {url}")
     
-    # 2. Cat du lieu thanh cac screen
-    print("\n[2/3] Dang tach du lieu thanh cac file screen...")
-    split_figma_screens()
-    
-    # 3. Preview cac man hinh
-    print("\n[3/3] Preview cac man hinh da trich xuat:")
-    screen_dir = "screens"
-    # Liet ke cac thu muc man hinh
-    folders = [f for f in os.listdir(screen_dir) if os.path.isdir(os.path.join(screen_dir, f))]
-    
-    for i, foldername in enumerate(folders):
-        print(f"{i+1}. {foldername}")
-    
-    print("\n=== HOAN THANH TAT CA CAC BUOC ===")
+    # Run server trong mot process rieng hoac chay truc tiep neu day la diem ket thuc
+    # De don gian va chac chan, chung ta se goi server.py
+    try:
+        # Mo trinh duyet
+        webbrowser.open(url)
+        
+        # Chay server
+        from server import app
+        uvicorn.run(app, host="127.0.0.1", port=8000)
+    except KeyboardInterrupt:
+        print("\n[*] Da dung server.")
+    except Exception as e:
+        print(f"[ERROR] Khong the khoi chay server: {e}")
 
 if __name__ == "__main__":
     main()

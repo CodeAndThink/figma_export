@@ -3,28 +3,55 @@ import os
 import requests
 
 # ==========================================
-# CẤU HÌNH THÔNG TIN FIGMA
+# CẤU HÌNH THÔNG TIN FIGMA (Helper functions)
 # ==========================================
 
-# 1. Điền Personal Access Token của bạn vào đây
-# Cách lấy: Mở Figma -> Settings -> Personal Access Tokens -> Generate new token
-FIGMA_TOKEN = "figd_FbhsFIOi967HZmlALPEhmyGg7wlG8zwIAZSMl_u7"
+def extract_file_key(input_file):
+    """Trích xuất File Key từ link Figma hoặc trả về chính nó nếu là Key."""
+    input_file = input_file.strip()
+    if "figma.com" in input_file:
+        parts = input_file.split("/")
+        if "file" in parts:
+            key = parts[parts.index("file") + 1]
+        elif "design" in parts:
+            key = parts[parts.index("design") + 1]
+        else:
+            key = input_file
+    else:
+        key = input_file
+    return key.split("?")[0]
 
-# 2. Điền File Key của bạn vào đây
-# Cách lấy: Từ link figma có dạng https://www.figma.com/file/ABCDEFG12345/Tên-File
-# Thì File Key chính là: ABCDEFG12345
-FIGMA_FILE_KEY = "B2E8zlky5H6OoIpZjNay6U"
+def get_cli_config():
+    """Lấy cấu hình từ terminal cho CLI mode."""
+    token = input("Nhập Figma Personal Access Token: ").strip()
+    file_input = input("Nhập Figma File Link hoặc File Key: ").strip()
+    file_key = extract_file_key(file_input)
+    return token, file_key
+
+# Biến toàn cục mặc định (có thể được ghi đè)
+FIGMA_TOKEN = ""
+FIGMA_FILE_KEY = ""
 
 # ==========================================
 
-def fetch_figma_data():
-    url = f"https://api.figma.com/v1/files/{FIGMA_FILE_KEY}"
+def fetch_figma_data(token=None, file_key=None):
+    global FIGMA_TOKEN, FIGMA_FILE_KEY
+    
+    # Sử dụng tham số nếu được truyền vào, nếu không dùng global
+    t = token or FIGMA_TOKEN
+    fk = file_key or FIGMA_FILE_KEY
+    
+    if not t or not fk:
+        print("[ERROR] Thieu FIGMA_TOKEN hoac FIGMA_FILE_KEY")
+        return
+        
+    url = f"https://api.figma.com/v1/files/{fk}"
     
     headers = {
-        "X-Figma-Token": FIGMA_TOKEN
+        "X-Figma-Token": t
     }
 
-    print(f"[*] Dang tai du lieu tu Figma (File Key: {FIGMA_FILE_KEY})...")
+    print(f"[*] Dang tai du lieu tu Figma (File Key: {fk})...")
     
     response = requests.get(url, headers=headers)
 
@@ -50,18 +77,22 @@ def fetch_figma_data():
         print(f"[ERROR] Loi khi tai du lieu: {response.status_code}")
         print(response.text)
 
-def fetch_node_images(node_ids, format="png", scale=1):
+def fetch_node_images(node_ids, format="png", scale=1, token=None, file_key=None):
     """
     Lay link anh render tu Figma cho danh sach cac node ID.
     """
-    if not node_ids:
+    global FIGMA_TOKEN, FIGMA_FILE_KEY
+    t = token or FIGMA_TOKEN
+    fk = file_key or FIGMA_FILE_KEY
+
+    if not node_ids or not t or not fk:
         return {}
 
     ids_param = ",".join(node_ids)
-    url = f"https://api.figma.com/v1/images/{FIGMA_FILE_KEY}?ids={ids_param}&format={format}&scale={scale}"
+    url = f"https://api.figma.com/v1/images/{fk}?ids={ids_param}&format={format}&scale={scale}"
     
     headers = {
-        "X-Figma-Token": FIGMA_TOKEN
+        "X-Figma-Token": t
     }
 
     print(f"[*] Dang lay link anh cho {len(node_ids)} nodes...")
@@ -74,4 +105,5 @@ def fetch_node_images(node_ids, format="png", scale=1):
         return {}
 
 if __name__ == "__main__":
-    fetch_figma_data()
+    token, file_key = get_cli_config()
+    fetch_figma_data(token, file_key)

@@ -8,7 +8,7 @@ def sanitize_filename(name):
     # Thay thế các ký tự không hợp lệ bằng dấu gạch dưới
     return re.sub(r'[\\/*?:"<>|]', "_", name).strip()
 
-def split_figma_screens(input_file="screens/figma_data.json", output_dir="screens"):
+def split_figma_screens(input_file="screens/figma_data.json", output_dir="screens", token=None, file_key=None):
     if not os.path.exists(input_file):
         print(f"[ERROR] Khong tim thay file: {input_file}")
         return
@@ -57,7 +57,7 @@ def split_figma_screens(input_file="screens/figma_data.json", output_dir="screen
     if screen_info:
         print(f"\n[*] Dang tai anh preview cho {len(screen_info)} man hinh...")
         node_ids = [info[0] for info in screen_info]
-        image_urls = fetch_node_images(node_ids)
+        image_urls = fetch_node_images(node_ids, token=token, file_key=file_key)
         
         for node_id, folder in screen_info:
             img_url = image_urls.get(node_id)
