@@ -291,10 +291,32 @@ input:focus {
     overflow: hidden;
 }
 
-.modal-left, .modal-right {
+@media (max-width: 1024px) {
+    .modal-body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    .modal-left, .modal-right {
+        min-width: 100% !important;
+        height: auto;
+    }
+    .img-container {
+        height: 50vh;
+    }
+}
+
+.modal-left {
+    flex: 1.5;
+    min-width: 33.33vw;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-right {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 400px;
 }
 
 .modal-left h3, .modal-right h3 {
@@ -305,13 +327,21 @@ input:focus {
 
 .img-container {
     flex: 1;
-    background: #000;
+    background-color: #1a1a1a;
+    background-image: 
+        linear-gradient(45deg, #222 25%, transparent 25%), 
+        linear-gradient(-45deg, #222 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #222 75%),
+        linear-gradient(-45deg, transparent 75%, #222 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
     border-radius: 12px;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: crosshair;
+    border: 1px solid var(--glass-border);
 }
 
 .img-wrapper {
@@ -329,15 +359,36 @@ input:focus {
 
 .modal-right pre {
     flex: 1;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 12px;
-    padding: 15px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.8rem;
+    padding: 20px;
+    font-family: 'Outfit', 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
     overflow: auto;
-    color: #00ff88;
+    color: #e0e0e0;
     border: 1px solid var(--glass-border);
     scroll-behavior: smooth;
+    line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+.modal-right pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.modal-right pre::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+
+.modal-right pre::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+}
+
+.modal-right pre::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
 }
 
 /* Highlight cho dòng code */

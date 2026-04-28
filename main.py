@@ -16,7 +16,7 @@ def main():
         return
 
     # 2. Tu dong mo trinh duyet sau 2 giay (doi server len)
-    url = "http://127.0.0.1:8000"
+    url = "http://127.0.0.1:8001"
     print(f"[*] Dang khoi dong server tai: {url}")
     
     # Run server trong mot process rieng hoac chay truc tiep neu day la diem ket thuc
@@ -27,7 +27,7 @@ def main():
         
         # Chay server
         from server import app
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        uvicorn.run(app, host="127.0.0.1", port=8001)
     except KeyboardInterrupt:
         print("\n[*] Da dung server.")
     except Exception as e:

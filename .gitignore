@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Project Specific
+screens/
+*.json
+!requirements.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
