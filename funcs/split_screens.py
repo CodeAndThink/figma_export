@@ -18,8 +18,19 @@ def split_figma_screens(input_file="screens/figma_data.json", output_dir="screen
         print(f"[*] Da tao thu muc: {output_dir}")
 
     print(f"[*] Dang doc du lieu tu {input_file}...")
-    with open(input_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    try:
+        with open(input_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] Khong the doc file JSON: {e}")
+        print("[TIP] File figma_data.json co the bi loi hoac bi cat cut do loi tai ve truoc do. Vui long chay lai Export.")
+        return
+    except MemoryError:
+        print("[ERROR] File JSON qua lon, khong du bo nho RAM de xu ly.")
+        return
+    except Exception as e:
+        print(f"[ERROR] Loi khong xac dinh: {e}")
+        return
 
     document = data.get("document", {})
     pages = document.get("children", [])

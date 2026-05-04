@@ -1,7 +1,4 @@
-import os
 import webbrowser
-import subprocess
-import time
 
 def main():
     print("=== FIGMA EXPORT PRO - UI MODE ===")

@@ -1,6 +1,8 @@
 import json
 import os
 import requests
+import time
+import random
 
 # ==========================================
 # CẤU HÌNH THÔNG TIN FIGMA (Helper functions)
@@ -32,6 +34,36 @@ def get_cli_config():
 FIGMA_TOKEN = ""
 FIGMA_FILE_KEY = ""
 
+def request_with_retry(method, url, headers=None, params=None, json_data=None, stream=False, max_retries=5):
+    """Thực hiện request với cơ chế retry và exponential backoff."""
+    retry_codes = [429, 500, 502, 503, 504]
+    
+    for i in range(max_retries):
+        try:
+            if method.upper() == "GET":
+                response = requests.get(url, headers=headers, params=params, stream=stream, timeout=60)
+            elif method.upper() == "POST":
+                response = requests.post(url, headers=headers, json=json_data, stream=stream, timeout=60)
+            
+            if response.status_code == 200:
+                return response
+            
+            if response.status_code in retry_codes:
+                wait_time = (2 ** i) + random.random()
+                print(f"[RETRY] Loi {response.status_code}. Dang thu lai sau {wait_time:.2f}s (Lan {i+1}/{max_retries})...")
+                time.sleep(wait_time)
+                continue
+            
+            # Neu loi khac thi tra ve luon
+            return response
+            
+        except Exception as e:
+            wait_time = (2 ** i) + random.random()
+            print(f"[RETRY] Loi ket noi: {e}. Dang thu lai sau {wait_time:.2f}s (Lan {i+1}/{max_retries})...")
+            time.sleep(wait_time)
+            
+    return None
+
 # ==========================================
 
 def fetch_figma_data(token=None, file_key=None):
@@ -53,29 +85,32 @@ def fetch_figma_data(token=None, file_key=None):
 
     print(f"[*] Dang tai du lieu tu Figma (File Key: {fk})...")
     
-    response = requests.get(url, headers=headers)
+    response = request_with_retry("GET", url, headers=headers, stream=True)
 
-    if response.status_code == 200:
-        data = response.json()
-        
-        # Lưu kết quả ra file JSON bên trong folder screens
+    if response and response.status_code == 200:
+        # Lưu kết quả ra file JSON bên trong folder screens (Sử dụng stream để tiết kiệm RAM)
         output_dir = "screens"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
         output_file = os.path.join(output_dir, "figma_data.json")
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-            
-        print(f"[SUCCESS] Thanh cong! Du lieu da duoc luu vao file: {output_file}")
         
-        # In ra một số thông tin cơ bản
-        document_name = data.get("name", "Unknown")
-        print(f"[INFO] Ten file Figma: {document_name}")
+        print(f"[*] Dang luu vao file: {output_file}...")
+        with open(output_file, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+            
+        print(f"[SUCCESS] Thanh cong! Du lieu da duoc luu.")
+        
+        # In ra một số thông tin (Chỉ đọc lại nếu cần, hoặc bỏ qua nếu file quá lớn)
+        # print(f"[INFO] Ten file Figma: ...")
         
     else:
-        print(f"[ERROR] Loi khi tai du lieu: {response.status_code}")
-        print(response.text)
+        status = response.status_code if response else "Unknown"
+        print(f"[ERROR] Loi khi tai du lieu: {status}")
+        if response:
+            print(response.text[:500])
 
 def fetch_node_images(node_ids, format="png", scale=1, token=None, file_key=None):
     """
@@ -88,21 +123,30 @@ def fetch_node_images(node_ids, format="png", scale=1, token=None, file_key=None
     if not node_ids or not t or not fk:
         return {}
 
-    ids_param = ",".join(node_ids)
-    url = f"https://api.figma.com/v1/images/{fk}?ids={ids_param}&format={format}&scale={scale}"
+    # Batching: Chia nho danh sach ID (toi da 100 IDs moi request)
+    batch_size = 100
+    all_images = {}
     
     headers = {
         "X-Figma-Token": t
     }
 
-    print(f"[*] Dang lay link anh cho {len(node_ids)} nodes...")
-    response = requests.get(url, headers=headers)
+    for i in range(0, len(node_ids), batch_size):
+        batch = node_ids[i:i + batch_size]
+        ids_param = ",".join(batch)
+        url = f"https://api.figma.com/v1/images/{fk}?ids={ids_param}&format={format}&scale={scale}"
+        
+        print(f"[*] Dang lay link anh cho batch {i//batch_size + 1} ({len(batch)} nodes)...")
+        response = request_with_retry("GET", url, headers=headers)
 
-    if response.status_code == 200:
-        return response.json().get("images", {})
-    else:
-        print(f"[ERROR] Loi khi lay link anh: {response.status_code}")
-        return {}
+        if response and response.status_code == 200:
+            batch_images = response.json().get("images", {})
+            all_images.update(batch_images)
+        else:
+            status = response.status_code if response else "Unknown"
+            print(f"  [!] Loi khi lay link anh batch {i//batch_size + 1}: {status}")
+
+    return all_images
 
 if __name__ == "__main__":
     token, file_key = get_cli_config()
